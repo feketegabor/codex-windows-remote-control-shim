@@ -44,7 +44,7 @@ It does not modify `config.toml`, patch Codex Desktop, replace files in `Windows
 
 - Windows
 - Codex Desktop
-- Go for the documented install path, because this repo ships source only
+- Go only when building from source
 
 This is an unofficial workaround. It depends on Codex Desktop honoring `CODEX_CLI_PATH` and on the local Codex CLI supporting `app-server --remote-control`.
 
@@ -55,22 +55,18 @@ Download `codex-remote-control-shim-windows-amd64.exe` from the latest GitHub Re
 ```powershell
 $installDir = "$env:USERPROFILE\.codex\remote-control"
 New-Item -ItemType Directory -Force -Path $installDir | Out-Null
-
-Copy-Item .\codex-remote-control-shim-windows-amd64.exe `
-  "$installDir\codex-remote-control-shim.exe"
+$target = "$installDir\codex-remote-control-shim.exe"
 
 $existing = [Environment]::GetEnvironmentVariable("CODEX_CLI_PATH", "User")
-if ($existing -and $existing -ne "$installDir\codex-remote-control-shim.exe") {
-  [Environment]::SetEnvironmentVariable(
-    "CODEX_CLI_PATH_BEFORE_REMOTE_CONTROL_SHIM",
-    $existing,
-    "User"
-  )
+if ($existing -and $existing -ne $target) {
+  throw "CODEX_CLI_PATH is already set to '$existing'. Review that value before replacing it."
 }
+
+Copy-Item .\codex-remote-control-shim-windows-amd64.exe $target
 
 [Environment]::SetEnvironmentVariable(
   "CODEX_CLI_PATH",
-  "$installDir\codex-remote-control-shim.exe",
+  $target,
   "User"
 )
 ```
@@ -80,8 +76,12 @@ Then fully restart Codex Desktop.
 Each release also includes `SHA256SUMS.txt` so you can verify the downloaded executable:
 
 ```powershell
-Get-FileHash .\codex-remote-control-shim-windows-amd64.exe -Algorithm SHA256
-Get-Content .\SHA256SUMS.txt
+$actual = (Get-FileHash .\codex-remote-control-shim-windows-amd64.exe -Algorithm SHA256).Hash.ToLowerInvariant()
+$expected = (Get-Content .\SHA256SUMS.txt | Select-String "codex-remote-control-shim-windows-amd64.exe").Line.Split(" ")[0]
+
+if ($actual -ne $expected) {
+  throw "Checksum mismatch. Expected $expected but got $actual."
+}
 ```
 
 ## Build from source

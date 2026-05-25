@@ -5,13 +5,18 @@ on:
     tags:
       - "v*.*.*"
 
-permissions:
-  contents: write
+permissions: {}
 
 jobs:
   windows-amd64:
     name: Build Windows amd64 release
     runs-on: windows-latest
+    permissions:
+      contents: write
+    env:
+      GOOS: windows
+      GOARCH: amd64
+      CGO_ENABLED: "0"
 
     steps:
       - name: Check out source
