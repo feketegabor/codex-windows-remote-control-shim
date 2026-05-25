@@ -1,10 +1,10 @@
-# Codex Windows Remote Control Shim
+# Codex Remote Control Shim For The Codex App For Windows
 
-Small Windows shim for the Codex app for Windows that makes the app-owned local app-server start with Codex remote control enabled.
+Small shim for the Codex app for Windows that makes the app-owned local app-server start with Codex remote control enabled.
 
 ## What Problem This Solves
 
-The Codex app for Windows starts a private local app-server process. On Windows, that app-server is normally launched by the app with arguments similar to:
+The Codex app for Windows starts a private local app-server process. That app-server is normally launched by the app with arguments similar to:
 
 ```text
 app-server --analytics-default-enabled
@@ -40,9 +40,26 @@ The shim:
 
 It does not modify `config.toml`, patch the Codex app for Windows, replace files in `WindowsApps`, or create a network listener by itself.
 
+## Install With An AI Coding Agent
+
+Copy this prompt into your AI coding agent if you want the agent to install the shim for you:
+
+```text
+Install the Codex Remote Control Shim for the Codex app for Windows from https://github.com/feketegabor/codex-windows-remote-control-shim.
+
+Use the latest GitHub Release asset named codex-remote-control-shim-windows-amd64.exe unless I explicitly ask you to build from source. Do not download or run unrelated binaries.
+
+Before changing anything, check the current user-level CODEX_CLI_PATH. If it is already set and does not point to $env:USERPROFILE\.codex\remote-control\codex-remote-control-shim.exe, stop and explain what it currently points to. Ask me before replacing it.
+
+If I approve replacing CODEX_CLI_PATH, save the previous value in CODEX_CLI_PATH_BEFORE_REMOTE_CONTROL_SHIM, copy the downloaded executable to $env:USERPROFILE\.codex\remote-control\codex-remote-control-shim.exe, then set user-level CODEX_CLI_PATH to that path.
+
+Do not modify Codex config.toml, do not patch files inside WindowsApps, do not create scheduled tasks, and do not start a separate app-server. This setup should make the Codex app for Windows use the shim the next time the app is fully restarted.
+
+After installation, tell me exactly what path CODEX_CLI_PATH is set to and ask me to fully restart the Codex app for Windows.
+```
+
 ## Requirements
 
-- Windows
 - Codex app for Windows
 - Go only when building from source
 
@@ -104,7 +121,7 @@ This is the simplest install path. It uses the executable built by GitHub Action
 
 Use this path if you prefer to compile the executable yourself instead of downloading the release build.
 
-1. Install Go for Windows if you do not already have it.
+1. Install Go if you do not already have it.
 
 2. Clone this repository:
 
@@ -179,24 +196,6 @@ If `CODEX_CLI_PATH` is already set, the installer stops instead of overwriting i
 ```
 
 When `-Force` replaces an existing value, the installer saves the previous value in `CODEX_CLI_PATH_BEFORE_REMOTE_CONTROL_SHIM`.
-
-## Prompt For AI Coding Agents
-
-Copy this prompt into your AI coding agent if you want it to install the shim for you:
-
-```text
-Install the Codex Windows Remote Control Shim from https://github.com/feketegabor/codex-windows-remote-control-shim.
-
-Use the latest GitHub Release asset named codex-remote-control-shim-windows-amd64.exe unless I explicitly ask you to build from source. Do not download or run unrelated binaries.
-
-Before changing anything, check the current user-level CODEX_CLI_PATH. If it is already set and does not point to $env:USERPROFILE\.codex\remote-control\codex-remote-control-shim.exe, stop and explain what it currently points to. Ask me before replacing it.
-
-If I approve replacing CODEX_CLI_PATH, save the previous value in CODEX_CLI_PATH_BEFORE_REMOTE_CONTROL_SHIM, copy the downloaded executable to $env:USERPROFILE\.codex\remote-control\codex-remote-control-shim.exe, then set user-level CODEX_CLI_PATH to that path.
-
-Do not modify Codex config.toml, do not patch files inside WindowsApps, do not create scheduled tasks, and do not start a separate app-server. This setup should make the Codex app for Windows use the shim the next time the app is fully restarted.
-
-After installation, tell me exactly what path CODEX_CLI_PATH is set to and ask me to fully restart the Codex app for Windows.
-```
 
 ## Uninstall
 
