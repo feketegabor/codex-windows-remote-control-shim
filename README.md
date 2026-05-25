@@ -48,7 +48,43 @@ It does not modify `config.toml`, patch Codex Desktop, replace files in `Windows
 
 This is an unofficial workaround. It depends on Codex Desktop honoring `CODEX_CLI_PATH` and on the local Codex CLI supporting `app-server --remote-control`.
 
-## Install
+## Install from a release
+
+Download `codex-remote-control-shim-windows-amd64.exe` from the latest GitHub Release, then install it somewhere stable and point `CODEX_CLI_PATH` to it:
+
+```powershell
+$installDir = "$env:USERPROFILE\.codex\remote-control"
+New-Item -ItemType Directory -Force -Path $installDir | Out-Null
+
+Copy-Item .\codex-remote-control-shim-windows-amd64.exe `
+  "$installDir\codex-remote-control-shim.exe"
+
+$existing = [Environment]::GetEnvironmentVariable("CODEX_CLI_PATH", "User")
+if ($existing -and $existing -ne "$installDir\codex-remote-control-shim.exe") {
+  [Environment]::SetEnvironmentVariable(
+    "CODEX_CLI_PATH_BEFORE_REMOTE_CONTROL_SHIM",
+    $existing,
+    "User"
+  )
+}
+
+[Environment]::SetEnvironmentVariable(
+  "CODEX_CLI_PATH",
+  "$installDir\codex-remote-control-shim.exe",
+  "User"
+)
+```
+
+Then fully restart Codex Desktop.
+
+Each release also includes `SHA256SUMS.txt` so you can verify the downloaded executable:
+
+```powershell
+Get-FileHash .\codex-remote-control-shim-windows-amd64.exe -Algorithm SHA256
+Get-Content .\SHA256SUMS.txt
+```
+
+## Build from source
 
 Clone the repo and build the shim:
 
@@ -148,6 +184,17 @@ You can then delete the shim executable from `%USERPROFILE%\.codex\remote-contro
 - It enables Codex app-server remote-control behavior. The authentication, authorization, pairing, and network behavior of remote control belong to the Codex/OpenAI implementation in the Codex version you are running, not to this shim.
 - Review the Codex app-server behavior for your installed version before enabling this on a machine with sensitive access.
 - This relies on an internal/hidden flag and may break when Codex changes its desktop launch path or app-server flags.
+
+## Publishing releases
+
+Maintainers publish a release by pushing a semver-style tag:
+
+```powershell
+git tag v0.1.0
+git push origin v0.1.0
+```
+
+The GitHub Actions workflow builds `codex-remote-control-shim-windows-amd64.exe`, creates `SHA256SUMS.txt`, and uploads both files to the matching GitHub Release.
 
 ## License
 
