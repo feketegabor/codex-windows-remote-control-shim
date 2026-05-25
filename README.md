@@ -2,7 +2,7 @@
 
 Small Windows shim for Codex Desktop that makes the Desktop-owned local app-server start with Codex remote control enabled.
 
-## What problem this solves
+## What Problem This Solves
 
 Codex Desktop starts a private local app-server process. On Windows, that app-server is normally launched by Desktop with arguments similar to:
 
@@ -26,7 +26,7 @@ Codex.exe
     -> codex.exe app-server --analytics-default-enabled --remote-control
 ```
 
-## How it works
+## How It Works
 
 The shim:
 
@@ -48,53 +48,119 @@ It does not modify `config.toml`, patch Codex Desktop, replace files in `Windows
 
 This is an unofficial workaround. It depends on Codex Desktop honoring `CODEX_CLI_PATH` and on the local Codex CLI supporting `app-server --remote-control`.
 
-## Install from a release
+## Install From A Release
 
-Download `codex-remote-control-shim-windows-amd64.exe` from the latest GitHub Release, then install it somewhere stable and point `CODEX_CLI_PATH` to it:
+This is the simplest install path. It uses the executable built by GitHub Actions from the tagged source.
+
+1. Open the latest release:
+
+   [Latest release](https://github.com/feketegabor/codex-windows-remote-control-shim/releases/latest)
+
+2. Download `codex-remote-control-shim-windows-amd64.exe`.
+
+3. Optional: download `SHA256SUMS.txt` and compare it with the executable hash:
+
+   ```powershell
+   Get-FileHash .\codex-remote-control-shim-windows-amd64.exe -Algorithm SHA256
+   ```
+
+   The hash printed by PowerShell should match the hash listed in `SHA256SUMS.txt`.
+
+4. Open PowerShell in the folder where you downloaded the `.exe`.
+
+5. Create the install folder:
+
+   ```powershell
+   New-Item -ItemType Directory -Force -Path "$env:USERPROFILE\.codex\remote-control"
+   ```
+
+6. Copy the executable into the install folder:
+
+   ```powershell
+   Copy-Item .\codex-remote-control-shim-windows-amd64.exe "$env:USERPROFILE\.codex\remote-control\codex-remote-control-shim.exe"
+   ```
+
+7. Check whether you already have a user-level `CODEX_CLI_PATH`:
+
+   ```powershell
+   [Environment]::GetEnvironmentVariable("CODEX_CLI_PATH", "User")
+   ```
+
+   If this prints an existing path, decide whether you want to replace it. To keep a backup of the old value before replacing it, run:
+
+   ```powershell
+   [Environment]::SetEnvironmentVariable("CODEX_CLI_PATH_BEFORE_REMOTE_CONTROL_SHIM", [Environment]::GetEnvironmentVariable("CODEX_CLI_PATH", "User"), "User")
+   ```
+
+8. Point Codex Desktop to the shim:
+
+   ```powershell
+   [Environment]::SetEnvironmentVariable("CODEX_CLI_PATH", "$env:USERPROFILE\.codex\remote-control\codex-remote-control-shim.exe", "User")
+   ```
+
+9. Fully restart Codex Desktop.
+
+## Build From Source
+
+Use this path if you prefer to compile the executable yourself instead of downloading the release build.
+
+1. Install Go for Windows if you do not already have it.
+
+2. Clone this repository:
+
+   ```powershell
+   git clone https://github.com/feketegabor/codex-windows-remote-control-shim.git
+   ```
+
+3. Enter the repository folder:
+
+   ```powershell
+   cd codex-windows-remote-control-shim
+   ```
+
+4. Create the install folder:
+
+   ```powershell
+   New-Item -ItemType Directory -Force -Path "$env:USERPROFILE\.codex\remote-control"
+   ```
+
+5. Build the shim into that folder:
+
+   ```powershell
+   go build -trimpath -ldflags="-s -w" -o "$env:USERPROFILE\.codex\remote-control\codex-remote-control-shim.exe" .
+   ```
+
+6. Check whether you already have a user-level `CODEX_CLI_PATH`:
+
+   ```powershell
+   [Environment]::GetEnvironmentVariable("CODEX_CLI_PATH", "User")
+   ```
+
+   If this prints an existing path, decide whether you want to replace it. To keep a backup of the old value before replacing it, run:
+
+   ```powershell
+   [Environment]::SetEnvironmentVariable("CODEX_CLI_PATH_BEFORE_REMOTE_CONTROL_SHIM", [Environment]::GetEnvironmentVariable("CODEX_CLI_PATH", "User"), "User")
+   ```
+
+7. Point Codex Desktop to the shim:
+
+   ```powershell
+   [Environment]::SetEnvironmentVariable("CODEX_CLI_PATH", "$env:USERPROFILE\.codex\remote-control\codex-remote-control-shim.exe", "User")
+   ```
+
+8. Fully restart Codex Desktop.
+
+If your endpoint protection flags locally built Go executables, review the source, build from a trusted environment, or allow-list your own build output according to your organization's security policy. Do not run random binaries from the internet.
+
+## Scripted Source Install
+
+The repository also includes `install.ps1`, which builds from source and sets `CODEX_CLI_PATH`.
+
+Use it only after reviewing what it does:
 
 ```powershell
-$installDir = "$env:USERPROFILE\.codex\remote-control"
-New-Item -ItemType Directory -Force -Path $installDir | Out-Null
-$target = "$installDir\codex-remote-control-shim.exe"
-
-$existing = [Environment]::GetEnvironmentVariable("CODEX_CLI_PATH", "User")
-if ($existing -and $existing -ne $target) {
-  throw "CODEX_CLI_PATH is already set to '$existing'. Review that value before replacing it."
-}
-
-Copy-Item .\codex-remote-control-shim-windows-amd64.exe $target
-
-[Environment]::SetEnvironmentVariable(
-  "CODEX_CLI_PATH",
-  $target,
-  "User"
-)
-```
-
-Then fully restart Codex Desktop.
-
-Each release also includes `SHA256SUMS.txt` so you can verify the downloaded executable:
-
-```powershell
-$actual = (Get-FileHash .\codex-remote-control-shim-windows-amd64.exe -Algorithm SHA256).Hash.ToLowerInvariant()
-$expected = (Get-Content .\SHA256SUMS.txt | Select-String "codex-remote-control-shim-windows-amd64.exe").Line.Split(" ")[0]
-
-if ($actual -ne $expected) {
-  throw "Checksum mismatch. Expected $expected but got $actual."
-}
-```
-
-## Build from source
-
-Clone the repo and build the shim:
-
-```powershell
-git clone https://github.com/feketegabor/codex-windows-remote-control-shim.git
-cd codex-windows-remote-control-shim
 .\install.ps1
 ```
-
-Then fully restart Codex Desktop.
 
 If `CODEX_CLI_PATH` is already set, the installer stops instead of overwriting it. Review the current value first, then either set `CODEX_CLI_PATH` manually or rerun:
 
@@ -104,79 +170,76 @@ If `CODEX_CLI_PATH` is already set, the installer stops instead of overwriting i
 
 When `-Force` replaces an existing value, the installer saves the previous value in `CODEX_CLI_PATH_BEFORE_REMOTE_CONTROL_SHIM`.
 
-If your endpoint protection flags locally built Go executables, review the source, build from a trusted environment, or allow-list your own build output according to your organization's security policy. Do not run random binaries from the internet.
+## Prompt For AI Coding Agents
 
-## Manual install
-
-```powershell
-git clone https://github.com/feketegabor/codex-windows-remote-control-shim.git
-cd codex-windows-remote-control-shim
-
-$installDir = "$env:USERPROFILE\.codex\remote-control"
-New-Item -ItemType Directory -Force -Path $installDir | Out-Null
-
-go build -trimpath -ldflags="-s -w" -o "$installDir\codex-remote-control-shim.exe" .
-[Environment]::SetEnvironmentVariable(
-  "CODEX_CLI_PATH",
-  "$installDir\codex-remote-control-shim.exe",
-  "User"
-)
-```
-
-Restart Codex Desktop after setting the environment variable.
-
-## Verify
-
-After restarting Codex Desktop, run:
-
-```powershell
-Get-CimInstance Win32_Process |
-  Where-Object {
-    $_.Name -in @("codex-remote-control-shim.exe", "codex.exe") -and
-    $_.CommandLine -like "*app-server*"
-  } |
-  Select-Object ProcessId, ParentProcessId, Name, CommandLine
-```
-
-You should see the shim process and a child `codex.exe` process whose command line includes:
+Copy this prompt into your AI coding agent if you want it to install the shim for you:
 
 ```text
---remote-control
+Install the Codex Windows Remote Control Shim from https://github.com/feketegabor/codex-windows-remote-control-shim.
+
+Use the latest GitHub Release asset named codex-remote-control-shim-windows-amd64.exe unless I explicitly ask you to build from source. Do not download or run unrelated binaries.
+
+Before changing anything, check the current user-level CODEX_CLI_PATH. If it is already set and does not point to %USERPROFILE%\.codex\remote-control\codex-remote-control-shim.exe, stop and explain what it currently points to. Ask me before replacing it.
+
+If I approve replacing CODEX_CLI_PATH, save the previous value in CODEX_CLI_PATH_BEFORE_REMOTE_CONTROL_SHIM, copy the downloaded executable to %USERPROFILE%\.codex\remote-control\codex-remote-control-shim.exe, then set user-level CODEX_CLI_PATH to that path.
+
+Do not modify Codex config.toml, do not patch files inside WindowsApps, do not create scheduled tasks, and do not start a separate app-server. This setup should make Codex Desktop use the shim the next time Codex Desktop is fully restarted.
+
+After installation, tell me exactly what path CODEX_CLI_PATH is set to and ask me to fully restart Codex Desktop.
 ```
 
 ## Uninstall
 
-Restore the previous `CODEX_CLI_PATH` value if the installer saved one:
+To uninstall, restore `CODEX_CLI_PATH` to what it was before installing the shim, or clear it if there was no previous value.
+
+1. Close Codex Desktop.
+
+2. Check whether the installer saved a previous value:
+
+   ```powershell
+   [Environment]::GetEnvironmentVariable("CODEX_CLI_PATH_BEFORE_REMOTE_CONTROL_SHIM", "User")
+   ```
+
+3. If the command prints a previous path, restore it:
+
+   ```powershell
+   [Environment]::SetEnvironmentVariable("CODEX_CLI_PATH", [Environment]::GetEnvironmentVariable("CODEX_CLI_PATH_BEFORE_REMOTE_CONTROL_SHIM", "User"), "User")
+   ```
+
+4. Clear the saved backup value after restoring it:
+
+   ```powershell
+   [Environment]::SetEnvironmentVariable("CODEX_CLI_PATH_BEFORE_REMOTE_CONTROL_SHIM", $null, "User")
+   ```
+
+5. If there was no previous value, clear `CODEX_CLI_PATH` instead:
+
+   ```powershell
+   [Environment]::SetEnvironmentVariable("CODEX_CLI_PATH", $null, "User")
+   ```
+
+6. Optionally delete the shim executable:
+
+   ```powershell
+   Remove-Item "$env:USERPROFILE\.codex\remote-control\codex-remote-control-shim.exe"
+   ```
+
+7. Restart Codex Desktop.
+
+If you want a single copy-paste uninstall script instead, use this:
 
 ```powershell
-$previous = [Environment]::GetEnvironmentVariable(
-  "CODEX_CLI_PATH_BEFORE_REMOTE_CONTROL_SHIM",
-  "User"
-)
-
+$previous = [Environment]::GetEnvironmentVariable("CODEX_CLI_PATH_BEFORE_REMOTE_CONTROL_SHIM", "User")
 if ($previous) {
   [Environment]::SetEnvironmentVariable("CODEX_CLI_PATH", $previous, "User")
-  [Environment]::SetEnvironmentVariable(
-    "CODEX_CLI_PATH_BEFORE_REMOTE_CONTROL_SHIM",
-    $null,
-    "User"
-  )
+  [Environment]::SetEnvironmentVariable("CODEX_CLI_PATH_BEFORE_REMOTE_CONTROL_SHIM", $null, "User")
 } else {
   [Environment]::SetEnvironmentVariable("CODEX_CLI_PATH", $null, "User")
 }
+Remove-Item "$env:USERPROFILE\.codex\remote-control\codex-remote-control-shim.exe" -ErrorAction SilentlyContinue
 ```
 
-Then restart Codex Desktop.
-
-If you installed manually and know there was no previous `CODEX_CLI_PATH`, you can clear it directly:
-
-```powershell
-[Environment]::SetEnvironmentVariable("CODEX_CLI_PATH", $null, "User")
-```
-
-You can then delete the shim executable from `%USERPROFILE%\.codex\remote-control`.
-
-## Security notes
+## Security Notes
 
 - The shim is small enough to audit directly.
 - The shim itself does not bind a TCP port or expose a WebSocket listener.
@@ -185,7 +248,7 @@ You can then delete the shim executable from `%USERPROFILE%\.codex\remote-contro
 - Review the Codex app-server behavior for your installed version before enabling this on a machine with sensitive access.
 - This relies on an internal/hidden flag and may break when Codex changes its desktop launch path or app-server flags.
 
-## Publishing releases
+## Publishing Releases
 
 Maintainers publish a release by pushing a semver-style tag:
 
