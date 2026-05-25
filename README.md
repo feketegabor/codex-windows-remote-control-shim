@@ -44,7 +44,7 @@ It does not modify `config.toml`, patch Codex Desktop, replace files in `Windows
 
 - Windows
 - Codex Desktop
-- Go, if building from source
+- Go for the documented install path, because this repo ships source only
 
 This is an unofficial workaround. It depends on Codex Desktop honoring `CODEX_CLI_PATH` and on the local Codex CLI supporting `app-server --remote-control`.
 
@@ -59,6 +59,14 @@ cd codex-windows-remote-control-shim
 ```
 
 Then fully restart Codex Desktop.
+
+If `CODEX_CLI_PATH` is already set, the installer stops instead of overwriting it. Review the current value first, then either set `CODEX_CLI_PATH` manually or rerun:
+
+```powershell
+.\install.ps1 -Force
+```
+
+When `-Force` replaces an existing value, the installer saves the previous value in `CODEX_CLI_PATH_BEFORE_REMOTE_CONTROL_SHIM`.
 
 If your endpoint protection flags locally built Go executables, review the source, build from a trusted environment, or allow-list your own build output according to your organization's security policy. Do not run random binaries from the internet.
 
@@ -102,7 +110,29 @@ You should see the shim process and a child `codex.exe` process whose command li
 
 ## Uninstall
 
-Clear the user environment variable and restart Codex Desktop:
+Restore the previous `CODEX_CLI_PATH` value if the installer saved one:
+
+```powershell
+$previous = [Environment]::GetEnvironmentVariable(
+  "CODEX_CLI_PATH_BEFORE_REMOTE_CONTROL_SHIM",
+  "User"
+)
+
+if ($previous) {
+  [Environment]::SetEnvironmentVariable("CODEX_CLI_PATH", $previous, "User")
+  [Environment]::SetEnvironmentVariable(
+    "CODEX_CLI_PATH_BEFORE_REMOTE_CONTROL_SHIM",
+    $null,
+    "User"
+  )
+} else {
+  [Environment]::SetEnvironmentVariable("CODEX_CLI_PATH", $null, "User")
+}
+```
+
+Then restart Codex Desktop.
+
+If you installed manually and know there was no previous `CODEX_CLI_PATH`, you can clear it directly:
 
 ```powershell
 [Environment]::SetEnvironmentVariable("CODEX_CLI_PATH", $null, "User")
@@ -113,9 +143,10 @@ You can then delete the shim executable from `%USERPROFILE%\.codex\remote-contro
 ## Security notes
 
 - The shim is small enough to audit directly.
-- It does not bind a TCP port or expose a WebSocket listener.
+- The shim itself does not bind a TCP port or expose a WebSocket listener.
 - It only changes app-server launches; other Codex CLI commands are forwarded unchanged.
-- Remote-control access is still governed by Codex/OpenAI account and remote-control pairing behavior.
+- It enables Codex app-server remote-control behavior. The authentication, authorization, pairing, and network behavior of remote control belong to the Codex/OpenAI implementation in the Codex version you are running, not to this shim.
+- Review the Codex app-server behavior for your installed version before enabling this on a machine with sensitive access.
 - This relies on an internal/hidden flag and may break when Codex changes its desktop launch path or app-server flags.
 
 ## License
