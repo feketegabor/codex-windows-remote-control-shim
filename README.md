@@ -235,21 +235,10 @@ To uninstall, restore `CODEX_CLI_PATH` to what it was before installing the shim
 
 7. Restart the Codex app for Windows.
 
-If you want a single copy-paste uninstall script instead, use this:
+If you want to uninstall with one paste, copy only this command:
 
 ```powershell
-$previous = [Environment]::GetEnvironmentVariable("CODEX_CLI_PATH_BEFORE_REMOTE_CONTROL_SHIM", "User")
-$shim = "$env:USERPROFILE\.codex\remote-control\codex-remote-control-shim.exe"
-$current = [Environment]::GetEnvironmentVariable("CODEX_CLI_PATH", "User")
-if ($previous) {
-  [Environment]::SetEnvironmentVariable("CODEX_CLI_PATH", $previous, "User")
-  [Environment]::SetEnvironmentVariable("CODEX_CLI_PATH_BEFORE_REMOTE_CONTROL_SHIM", $null, "User")
-} elseif ($current -eq $shim) {
-  [Environment]::SetEnvironmentVariable("CODEX_CLI_PATH", $null, "User")
-} else {
-  Write-Host "CODEX_CLI_PATH does not point to this shim; leaving it unchanged."
-}
-Remove-Item $shim -ErrorAction SilentlyContinue
+$previous=[Environment]::GetEnvironmentVariable("CODEX_CLI_PATH_BEFORE_REMOTE_CONTROL_SHIM","User"); $shim="$env:USERPROFILE\.codex\remote-control\codex-remote-control-shim.exe"; $current=[Environment]::GetEnvironmentVariable("CODEX_CLI_PATH","User"); if ($previous) { [Environment]::SetEnvironmentVariable("CODEX_CLI_PATH",$previous,"User"); [Environment]::SetEnvironmentVariable("CODEX_CLI_PATH_BEFORE_REMOTE_CONTROL_SHIM",$null,"User") } elseif ($current -eq $shim) { [Environment]::SetEnvironmentVariable("CODEX_CLI_PATH",$null,"User") } else { Write-Host "CODEX_CLI_PATH does not point to this shim; leaving it unchanged." }; Remove-Item $shim -ErrorAction SilentlyContinue
 ```
 
 ## Security Notes
